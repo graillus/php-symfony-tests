@@ -18,14 +18,12 @@ Included tools are phpunit, phpcs, phploc, phpcpd, phpmd.
 - Add the following packages int your ```composer.json``` :
 ```json
     "require-dev": {
-        ...
         "phing/phing": "^2.14",
         "phpunit/phpunit": "^5.4",
         "phpmd/phpmd": "^2.4",
         "phploc/phploc": "^3.0",
         "sebastian/phpcpd": "^2.0",
         "squizlabs/php_codesniffer": "^2.6"
-        ...
     }
 ```
 
@@ -70,6 +68,7 @@ List available tasks:
 ## License
 
 WTFPL v2
+
 ![WTFPL v2](http://www.wtfpl.net/wp-content/uploads/2012/12/wtfpl-badge-1.png)
 
 See the LICENSE file.
