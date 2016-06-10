@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="graillus/test" default="all">
+
+    <property name="dir.build" value="${project.basedir}/build"/>
+
+    <target name="all" depends="composer,prepare,phplint,phpunit-ci,phploc,phpmd-ci,phpcs-ci,phpcpd-ci"/>
+    <target name="static" depends="phpcs,phpmd"/>
+    <target name="unit" depends="phpunit"/>
+
+    <target name="clean" unless="clean.done" description="Cleanup build artifacts">
+        <delete dir="${dir.build}/phpcs"/>
+        <delete dir="${dir.build}/phpmd"/>
+        <delete dir="${dir.build}/phpcpd"/>
+        <delete dir="${dir.build}/coverage-unit"/>
+        <delete dir="${dir.build}/coverage-unit-html"/>
+        <delete dir="${dir.build}/phpunit"/>
+        <delete dir="${dir.build}/phploc"/>
+        <property name="clean.done" value="true"/>
+    </target>
+
+    <target name="prepare" unless="prepare.done" depends="clean" description="Prepare for build">
+        <mkdir dir="${dir.build}/phpcs"/>
+        <mkdir dir="${dir.build}/phpmd"/>
+        <mkdir dir="${dir.build}/phpcpd"/>
+        <mkdir dir="${dir.build}/coverage-unit"/>
+        <mkdir dir="${dir.build}/coverage-unit-html"/>
+        <mkdir dir="${dir.build}/phpunit"/>
+        <mkdir dir="${dir.build}/phploc"/>
+        <property name="prepare.done" value="true"/>
+    </target>
+
+    <target name="phplint"
+            description="Run PHP Lint.">
+        <echo msg="Checking syntax with PHP lint"/>
+        <phplint haltonfailure="true" interpreter="php">
+            <fileset dir="${project.basedir}/src"/>
+        </phplint>
+    </target>
+
+    <target name="composer"
+            description="Installing dependencies">
+        <exec executable="composer"
+              checkreturn="true"
+              passthru="true"
+              level="info">
+            <arg value="install" />
+            <arg value="--no-progress" />
+            <arg value="--no-interaction" />
+        </exec>
+    </target>
+
+    <target name="phploc"
+            depends="prepare"
+            description="Measure project size using PHPLOC and log result in CSV and XML format">
+        <exec executable="${project.basedir}/vendor/bin/phploc"
+              level="info">
+            <arg value="--count-tests"/>
+            <arg value="--log-xml"/>
+            <arg path="${dir.build}/phploc/phploc.xml"/>
+            <arg path="${project.basedir}/src"/>
+        </exec>
+    </target>
+
+    <target name="phpunit-ci"
+            depends="prepare"
+            description="Run unit tests with PHPUnit">
+        <exec executable="${project.basedir}/vendor/bin/phpunit"
+              checkreturn="true"
+              passthru="true"
+              level="info">
+            <arg value="--coverage-html=${dir.build}/coverage-unit-html"/>
+            <arg value="--coverage-php=${dir.build}/coverage-unit/all.cov"/>
+            <arg value="--coverage-clover=${dir.build}/coverage-unit/all.xml"/>
+            <arg value="--log-junit=${dir.build}/phpunit/junit.xml"/>
+            <arg value="--configuration"/>
+            <arg path="${project.basedir}/phpunit.xml"/>
+        </exec>
+    </target>
+
+    <target name="phpunit"
+            description="Run unit tests with PHPUnit">
+        <exec executable="${project.basedir}/vendor/bin/phpunit"
+              checkreturn="true"
+              passthru="true"
+              level="info">
+            <arg value="--configuration"/>
+            <arg path="${project.basedir}/phpunit.xml"/>
+        </exec>
+    </target>
+
+    <target name="coverage-php"
+            depends="prepare"
+            description="Run unit tests with PHPUnit to generate a coverage file">
+        <exec executable="${project.basedir}/vendor/bin/phpunit" checkreturn="true" level="info">
+            <arg value="--coverage-php=${dir.build}/coverage-unit/all.cov"/>
+            <arg value="--configuration"/>
+            <arg path="${project.basedir}/phpunit.xml"/>
+        </exec>
+    </target>
+
+    <target name="coverage"
+            depends="prepare"
+            description="Generate HTML coverage">
+        <exec executable="${project.basedir}/vendor/bin/phpunit"
+              checkreturn="true"
+              passthru="true"
+              level="info">
+            <arg value="--coverage-html=${dir.build}/coverage-unit-html"/>
+            <arg value="--configuration"/>
+            <arg path="${project.basedir}/phpunit.xml"/>
+        </exec>
+    </target>
+
+    <target name="phpmd-ci"
+            depends="phpunit-ci"
+            description="Perform project mess detection using PHPMD and log result in XML format">
+        <exec executable="${project.basedir}/vendor/bin/phpmd">
+            <arg path="${project.basedir}/src"/>
+            <arg value="xml"/>
+            <arg path="${project.basedir}/phpmd.xml"/>
+            <arg value="--reportfile"/>
+            <arg path="${dir.build}/phpmd/pmd.xml"/>
+        </exec>
+    </target>
+
+    <target name="phpmd"
+            depends="coverage-php">
+        <exec executable="${project.basedir}/vendor/bin/phpmd"
+              passthru="true"
+              checkreturn="true">
+            <arg path="${project.basedir}/src"/>
+            <arg value="text"/>
+            <arg path="${project.basedir}/phpmd.xml"/>
+        </exec>
+    </target>
+
+    <target name="phpcs-ci"
+            depends="prepare"
+            description="Find coding standard violations using PHP_CodeSniffer and log result in XML format">
+        <exec executable="${project.basedir}/vendor/bin/phpcs">
+            <arg value="--report=checkstyle"/>
+            <arg value="--report-file=${dir.build}/phpcs/checkstyle.xml"/>
+            <arg value="--standard=PSR2"/>
+            <arg value="--extensions=php"/>
+            <arg value="--ignore=Tests"/>
+            <arg path="${project.basedir}/src"/>
+        </exec>
+    </target>
+
+    <target name="phpcs">
+        <exec executable="${project.basedir}/vendor/bin/phpcs"
+              passthru="true"
+              checkreturn="true">
+            <arg value="--report=full"/>
+            <arg value="--standard=PSR2"/>
+            <arg value="--extensions=php"/>
+            <arg value="--ignore=Tests"/>
+            <arg path="${project.basedir}/src"/>
+        </exec>
+    </target>
+
+    <target name="phpcpd-ci"
+            depends="prepare"
+            description="Find duplicate code using PHPCPD and log result in XML format">
+        <exec executable="${project.basedir}/vendor/bin/phpcpd"
+              checkreturn="true"
+              passthru="true"
+              level="info">
+            <arg value="--log-pmd"/>
+            <arg path="${dir.build}/phpcpd/pmd-cpd.xml"/>
+            <arg path="${project.basedir}/src"/>
+            <arg value="--exclude=Tests" />
+        </exec>
+    </target>
+
+</project>
